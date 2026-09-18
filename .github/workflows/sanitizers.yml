@@ -1,0 +1,26 @@
+name: Sanitizers
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  sanitized-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sanitizer: [address, undefined]
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Configure
+        run: >-
+          cmake -S . -B build -DCMAKE_C_COMPILER=gcc -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_C_FLAGS="-fsanitize=${{ matrix.sanitizer }} -fno-omit-frame-pointer"
+      - name: Build
+        run: cmake --build build --parallel
+      - name: Test under ${{ matrix.sanitizer }}
+        run: ctest --test-dir build --output-on-failure
